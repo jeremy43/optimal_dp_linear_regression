@@ -6,13 +6,14 @@ import DPalgs
 import util
 import numpy as np
 import csv
+import pickle
 import input
 from scipy.io import loadmat
 import tensorflow as tf
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('dataset', 'mnist', 'The name of the dataset to use')
+tf.flags.DEFINE_string('dataset', 'adult', 'The name of the dataset to use')
 tf.flags.DEFINE_integer('nb_labels', 10, 'Number of output classes')
 
 tf.flags.DEFINE_string('data_dir','/Users/yuqing/github_proj/optimal_dp_linear_regression/data','Temporary storage')
@@ -181,13 +182,13 @@ def ignore():
     X = normalize(X)
 
 def non_private(X, y):
-    clf = LogisticRegression(penalty='l2', C=2 / 1, solver='sag', multi_class='ovr').fit(X, y)
+    clf = LogisticRegression(penalty='l2', C=2 / 1, solver='sag', multi_class='ovr', n_jobs=-1).fit(X, y)
 
     print('standard_accuracy={}'.format(clf.score(X, y)))
     return clf.score(X, y)
 
 def main(X_train, y_train, X_test, y_test):
-    eps_set = [0.01,0.04, 0.1, 1, 3,5, 10]
+    eps_set = [0.04, 0.1, 1, 3,5, 10]
     #X_train, X_test, y_train, y_test = init(csv_path)
     delta = 1e-6
     funcs = [train_log, util.cvx_objpert]
@@ -237,8 +238,19 @@ if __name__ == '__main__':
 
     if FLAGS.dataset == 'mnist':
         X_train, y_train, X_test, y_test = input.ld_mnist(test_only=False, train_only = False)
-        X_train = normalize(X_train.reshape([-1, 784]))
+        X_train = normalize(X_train.reshape([-1, 784]))[:1000,:]
+        y_train = y_train[:1000]
         X_test = normalize(X_test.reshape([-1, 784]))
+
+    elif FLAGS.dataset == 'adult':
+        file_Name = "adult/adult.data"
+        # open the file for writing
+        fileObject = open(file_Name, 'rb')
+        dataset = pickle.load(fileObject)
+        X_train = dataset['train_data']
+        y_train = dataset['train_label']
+        X_test = dataset['test_data']
+        y_test = dataset['test_label']
 
     else:
         X_train, X_test, y_train, y_test = init(csv_path)
